@@ -21,6 +21,7 @@ class PoolingStrategy(Enum):
     LAST_TOKEN = 5  # corresponds to [SEP] for single sequences
     CLS_TOKEN = 4  # corresponds to the first token for single seq.
     SEP_TOKEN = 5  # corresponds to the last token for single seq.
+    CLASSIFICATION = 6 #corresponds to bert classifier
 
     def __str__(self):
         return self.name
@@ -74,14 +75,22 @@ def optimize_graph(args, logger=None):
                 input_mask=input_mask,
                 token_type_ids=input_type_ids,
                 use_one_hot_embeddings=False)
-
+            
+            num_labels=2
+            if args.pooling_strategy == PoolingStrategy.CLASSIFICATION:
+                    hidden_size = 768
+                    output_weights = tf.get_variable(
+                    "output_weights", [args.num_labels, hidden_size],
+                    initializer=tf.truncated_normal_initializer(stddev=0.02))
+                    output_bias = tf.get_variable("output_bias", [args.num_labels], initializer=tf.zeros_initializer())
+                    
             tvars = tf.trainable_variables()
 
             (assignment_map, initialized_variable_names
              ) = modeling.get_assignment_map_from_checkpoint(tvars, init_checkpoint)
 
             tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
-
+            num_labels=2
             minus_mask = lambda x, m: x - tf.expand_dims(1.0 - m, axis=-1) * 1e30
             mul_mask = lambda x, m: x * tf.expand_dims(m, axis=-1)
             masked_reduce_max = lambda x, m: tf.reduce_max(minus_mask(x, m), axis=1)
@@ -94,7 +103,6 @@ def optimize_graph(args, logger=None):
                 else:
                     all_layers = [model.all_encoder_layers[l] for l in args.pooling_layer]
                     encoder_layer = tf.concat(all_layers, -1)
-
                 input_mask = tf.cast(input_mask, tf.float32)
                 if args.pooling_strategy == PoolingStrategy.REDUCE_MEAN:
                     pooled = masked_reduce_mean(encoder_layer, input_mask)
@@ -112,6 +120,11 @@ def optimize_graph(args, logger=None):
                     rng = tf.range(0, tf.shape(seq_len)[0])
                     indexes = tf.stack([rng, seq_len - 1], 1)
                     pooled = tf.gather_nd(encoder_layer, indexes)
+                elif args.pooling_strategy == PoolingStrategy.CLASSIFICATION:
+                    pooled = tf.squeeze(encoder_layer[:, 0:1, :], axis=1)
+                    logits = tf.matmul(pooled, output_weights, transpose_b=True)
+                    logits = tf.nn.bias_add(logits, output_bias)
+                    pooled = tf.nn.softmax(logits, axis=-1)
                 elif args.pooling_strategy == PoolingStrategy.NONE:
                     pooled = mul_mask(encoder_layer, input_mask)
                 else:
