@@ -78,7 +78,7 @@ def optimize_graph(args, logger=None):
             
             num_labels=2
             if args.pooling_strategy == PoolingStrategy.CLASSIFICATION:
-                    hidden_size = 768
+                    hidden_size = 1024
                     output_weights = tf.get_variable(
                     "output_weights", [num_labels, hidden_size],
                     initializer=tf.truncated_normal_initializer(stddev=0.02))
