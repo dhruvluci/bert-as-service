@@ -80,9 +80,9 @@ def optimize_graph(args, logger=None):
             if args.pooling_strategy == PoolingStrategy.CLASSIFICATION:
                     hidden_size = 768
                     output_weights = tf.get_variable(
-                    "output_weights", [args.num_labels, hidden_size],
+                    "output_weights", [num_labels, hidden_size],
                     initializer=tf.truncated_normal_initializer(stddev=0.02))
-                    output_bias = tf.get_variable("output_bias", [args.num_labels], initializer=tf.zeros_initializer())
+                    output_bias = tf.get_variable("output_bias", [num_labels], initializer=tf.zeros_initializer())
                     
             tvars = tf.trainable_variables()
 
