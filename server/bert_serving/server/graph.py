@@ -21,6 +21,7 @@ class PoolingStrategy(Enum):
     LAST_TOKEN = 5  # corresponds to [SEP] for single sequences
     CLS_TOKEN = 4  # corresponds to the first token for single seq.
     SEP_TOKEN = 5  # corresponds to the last token for single seq.
+    QA = 6
 
     def __str__(self):
         return self.name
@@ -74,8 +75,25 @@ def optimize_graph(args, logger=None):
                 input_mask=input_mask,
                 token_type_ids=input_type_ids,
                 use_one_hot_embeddings=False)
+            
+            if args.PoolingStrategt==PoolingStrategy.QA:
+                final_hidden = model.get_sequence_output()
 
-            tvars = tf.trainable_variables()
+                final_hidden_shape = modeling.get_shape_list(final_hidden, expected_rank=3)
+                batch_size = final_hidden_shape[0]
+                seq_length = final_hidden_shape[1]
+                hidden_size = final_hidden_shape[2]
+
+                output_weights = tf.get_variable(
+                  "cls/squad/output_weights", [2, hidden_size],
+                  initializer=tf.truncated_normal_initializer(stddev=0.02))
+
+                output_bias = tf.get_variable(
+                  "cls/squad/output_bias", [2], initializer=tf.zeros_initializer())
+                        tvars = tf.trainable_variables()
+
+                final_hidden_matrix = tf.reshape(final_hidden,
+                                       [batch_size * seq_length, hidden_size])
 
             (assignment_map, initialized_variable_names
              ) = modeling.get_assignment_map_from_checkpoint(tvars, init_checkpoint)
@@ -112,6 +130,14 @@ def optimize_graph(args, logger=None):
                     rng = tf.range(0, tf.shape(seq_len)[0])
                     indexes = tf.stack([rng, seq_len - 1], 1)
                     pooled = tf.gather_nd(encoder_layer, indexes)
+                elif args.pooling_strategy == PoolingStrategy.QA:
+                    logits = tf.matmul(final_hidden_matrix, output_weights, transpose_b=True)
+                    logits = tf.nn.bias_add(logits, output_bias)
+                    logits = tf.reshape(logits, [batch_size, seq_length, 2])
+                    logits = tf.transpose(logits, [2, 0, 1])
+                    unstacked_logits = tf.unstack(logits, axis=0)
+                    (start_logits, end_logits) = (unstacked_logits[0], unstacked_logits[1])
+                    pooled = tf.gather_nd(start_logits, end_logits)
                 elif args.pooling_strategy == PoolingStrategy.NONE:
                     pooled = mul_mask(encoder_layer, input_mask)
                 else:
