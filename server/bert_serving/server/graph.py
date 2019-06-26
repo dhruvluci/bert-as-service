@@ -76,7 +76,7 @@ def optimize_graph(args, logger=None):
                 token_type_ids=input_type_ids,
                 use_one_hot_embeddings=False)
             
-            if args.PoolingStrategt==PoolingStrategy.QA:
+            if args.PoolingStrategty==PoolingStrategy.QA:
                 final_hidden = model.get_sequence_output()
 
                 final_hidden_shape = modeling.get_shape_list(final_hidden, expected_rank=3)
