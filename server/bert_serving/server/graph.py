@@ -90,11 +90,11 @@ def optimize_graph(args, logger=None):
 
                 output_bias = tf.get_variable(
                   "cls/squad/output_bias", [2], initializer=tf.zeros_initializer())
-                        tvars = tf.trainable_variables()
 
                 final_hidden_matrix = tf.reshape(final_hidden,
                                        [batch_size * seq_length, hidden_size])
-
+                
+            tvars = tf.trainable_variables()
             (assignment_map, initialized_variable_names
              ) = modeling.get_assignment_map_from_checkpoint(tvars, init_checkpoint)
 
