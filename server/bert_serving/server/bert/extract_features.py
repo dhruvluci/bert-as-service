@@ -134,12 +134,12 @@ def convert_lst_to_features(lst_str, max_seq_length, max_position_embeddings,
                 segment_ids=input_type_ids)
             
      #get features
-     features=get_ans()
+     #features=get_ans()
      #write to tfrecord
-     file_based_convert_examples_to_features(get_ans())
+     #file_based_convert_examples_to_features(get_ans())
      #load classifier for result
-     init_ckpt="./qnli2/bert_model
-     result=get_ans(init_ckpt)   
+     #init_ckpt="./qnli2/bert_model
+     #result=get_ans(init_ckpt)   
      
             
 
