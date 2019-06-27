@@ -310,12 +310,12 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
       init_string = ""
       if var.name in initialized_variable_names:
         init_string = ", *INIT_FROM_CKPT*"
-      tf.logging.info("  name = %s, shape = %s%s", var.name, var.shape,
+        tf.logging.info("  name = %s, shape = %s%s", var.name, var.shape,
                       init_string)
 
-    output_spec = None
-    else:
-      output_spec = tf.contrib.tpu.TPUEstimatorSpec(
+        output_spec = None
+      else:
+          output_spec = tf.contrib.tpu.TPUEstimatorSpec(
           mode=mode,
           predictions={"probabilities": probabilities},
           scaffold_fn=scaffold_fn)
