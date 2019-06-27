@@ -131,13 +131,14 @@ def optimize_graph(args, logger=None):
                     indexes = tf.stack([rng, seq_len - 1], 1)
                     pooled = tf.gather_nd(encoder_layer, indexes)
                 elif args.pooling_strategy == PoolingStrategy.QA:
-                    logits = tf.matmul(final_hidden_matrix, output_weights, transpose_b=True)
-                    logits = tf.nn.bias_add(logits, output_bias)
-                    logits = tf.reshape(logits, [batch_size, seq_length, 2])
-                    logits = tf.transpose(logits, [2, 0, 1])
-                    unstacked_logits = tf.unstack(logits, axis=0)
-                    (start_logits, end_logits) = (unstacked_logits[0], unstacked_logits[1])
-                    pooled = tf.gather_nd(start_logits, end_logits)
+                    logits= encoder_layer * output_weights + output_bias
+                    #logits = tf.matmul(final_hidden_matrix, output_weights, transpose_b=True)
+                    #logits = tf.nn.bias_add(logits, output_bias)
+                    #logits = tf.reshape(logits, [batch_size, seq_length, 2])
+                    #logits = tf.transpose(logits, [2, 0, 1])
+                    #unstacked_logits = tf.unstack(logits, axis=0)
+                    #(start_logits, end_logits) = (unstacked_logits[0], unstacked_logits[1])
+                    pooled = tf.gather_nd(logits)
                 elif args.pooling_strategy == PoolingStrategy.NONE:
                     pooled = mul_mask(encoder_layer, input_mask)
                 else:
