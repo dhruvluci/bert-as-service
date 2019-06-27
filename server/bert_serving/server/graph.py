@@ -136,9 +136,12 @@ def optimize_graph(args, logger=None):
                     logits = tf.nn.bias_add(logits, output_bias)
                     logits = tf.reshape(logits, [batch_size, seq_length, 2])
                     logits = tf.transpose(logits, [2, 0, 1])
+                    seq_len = tf.cast(tf.reduce_sum(input_mask, axis=1), tf.int32)
+                    rng = tf.range(0, tf.shape(seq_len)[0])
+                    indexes = tf.stack([rng, seq_len - 1], 1)
                     #unstacked_logits = tf.unstack(logits, axis=0)
                     #(start_logits, end_logits) = (unstacked_logits[0], unstacked_logits[1])
-                    pooled = tf.gather_nd(logits)
+                    pooled = tf.gather_nd(logits, indexes)
                 elif args.pooling_strategy == PoolingStrategy.NONE:
                     pooled = mul_mask(encoder_layer, input_mask)
                 else:
