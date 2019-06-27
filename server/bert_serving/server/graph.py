@@ -133,7 +133,9 @@ def optimize_graph(args, logger=None):
                 elif args.pooling_strategy == PoolingStrategy.QA:
                     #logits= encoder_layer * output_weights + output_bias
                     #layer=masked_reduce_mean(encoder_layer, input_mask)
-                    logits = tf.matmul(encoder_layer, output_weights, transpose_b=True)
+                    fhidden=tf.reshape(encoder_layer,
+                                       [batch_size * seq_length, hidden_size])
+                    logits = tf.matmul(fhidden, output_weights, transpose_b=True)
                     logits = tf.nn.bias_add(logits, output_bias)
                     logits = tf.reshape(logits, [batch_size, seq_length, 2])
                     logits = tf.transpose(logits, [2, 0, 1])
